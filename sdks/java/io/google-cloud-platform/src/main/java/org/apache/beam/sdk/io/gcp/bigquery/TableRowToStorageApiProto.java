@@ -66,6 +66,7 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterable
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Lists;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Maps;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.io.BaseEncoding;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.math.DoubleMath;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.joda.time.Days;
 
@@ -704,6 +705,22 @@ public class TableRowToStorageApiProto {
           }
         } else if (value instanceof Integer || value instanceof Long) {
           return ((Number) value).longValue();
+        } else if (value instanceof Double) {
+            Double d = ((Double) value);
+
+            try {
+              return DoubleMath.roundToLong(d, RoundingMode.UNNECESSARY);
+            } catch (ArithmeticException e) {
+                error = new SingleValueConversionException(value, schemaInformation, e);
+            }
+        } else if (value instanceof Float) {
+            Float f = ((Float) value);
+
+            try {
+                return DoubleMath.roundToLong(f.doubleValue(), RoundingMode.UNNECESSARY);
+            } catch (ArithmeticException e) {
+                error = new SingleValueConversionException(value, schemaInformation, e);
+            }
         } else if (value instanceof BigDecimal) {
           try {
             return ((BigDecimal) value).longValueExact();
@@ -793,6 +810,8 @@ public class TableRowToStorageApiProto {
               new BigDecimal((String) value));
         } else if (value instanceof BigDecimal) {
           return BigDecimalByteStringEncoder.encodeToNumericByteString(((BigDecimal) value));
+        } else if (value instanceof BigInteger) {
+            return BigDecimalByteStringEncoder.encodeToNumericByteString(new BigDecimal((BigInteger) value));
         } else if (value instanceof Double || value instanceof Float) {
           return BigDecimalByteStringEncoder.encodeToNumericByteString(
               BigDecimal.valueOf(((Number) value).doubleValue()));
@@ -807,6 +826,8 @@ public class TableRowToStorageApiProto {
               new BigDecimal((String) value));
         } else if (value instanceof BigDecimal) {
           return BigDecimalByteStringEncoder.encodeToBigNumericByteString(((BigDecimal) value));
+        } else if (value instanceof BigInteger) {
+            return BigDecimalByteStringEncoder.encodeToNumericByteString(new BigDecimal((BigInteger) value));
         } else if (value instanceof Double || value instanceof Float) {
           return BigDecimalByteStringEncoder.encodeToBigNumericByteString(
               BigDecimal.valueOf(((Number) value).doubleValue()));
