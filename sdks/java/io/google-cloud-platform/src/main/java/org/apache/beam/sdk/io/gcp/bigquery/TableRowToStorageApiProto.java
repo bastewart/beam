@@ -339,6 +339,10 @@ public class TableRowToStorageApiProto {
       return tableFieldSchema.getType();
     }
 
+    public TableFieldSchema.Mode getMode() {
+      return tableFieldSchema.getMode();
+    }
+
     public SchemaInformation getSchemaForField(String name) {
       SchemaInformation schemaInformation = subFieldsByName.get(name);
       if (schemaInformation == null) {
@@ -687,13 +691,16 @@ public class TableRowToStorageApiProto {
       boolean allowMissingRequiredFields,
       Supplier<@Nullable TableRow> getUnknownNestedFields)
       throws SchemaConversionException {
+
+      SingleValueConversionException error = null;
+
     switch (schemaInformation.getType()) {
       case INT64:
         if (value instanceof String) {
           try {
             return Long.valueOf((String) value);
           } catch (NumberFormatException e) {
-            throw new SingleValueConversionException(value, schemaInformation, e);
+            error = new SingleValueConversionException(value, schemaInformation, e);
           }
         } else if (value instanceof Integer || value instanceof Long) {
           return ((Number) value).longValue();
@@ -701,13 +708,13 @@ public class TableRowToStorageApiProto {
           try {
             return ((BigDecimal) value).longValueExact();
           } catch (ArithmeticException e) {
-            throw new SingleValueConversionException(value, schemaInformation, e);
+            error = new SingleValueConversionException(value, schemaInformation, e);
           }
         } else if (value instanceof BigInteger) {
           try {
             return ((BigInteger) value).longValueExact();
           } catch (ArithmeticException e) {
-            throw new SingleValueConversionException(value, schemaInformation, e);
+            error = new SingleValueConversionException(value, schemaInformation, e);
           }
         }
         break;
@@ -868,15 +875,23 @@ public class TableRowToStorageApiProto {
         throw new RuntimeException("Unknown type " + schemaInformation.getType());
     }
 
-    throw new SchemaDoesntMatchException(
-        "Unexpected value: "
-            + value
-            + ", type: "
-            + (value == null ? "null" : value.getClass())
-            + ". Table field name: "
-            + schemaInformation.getFullName()
-            + ", type: "
-            + schemaInformation.getType());
+    if (schemaInformation.getMode() == TableFieldSchema.Mode.NULLABLE) {
+        return null;
+    }
+    else if (error != null) {
+        throw error;
+    }
+    else {
+        throw new SchemaDoesntMatchException(
+            "Unexpected value: "
+                + value
+                + ", type: "
+                + (value == null ? "null" : value.getClass())
+                + ". Table field name: "
+                + schemaInformation.getFullName()
+                + ", type: "
+                + schemaInformation.getType());
+    }
   }
 
   @VisibleForTesting
