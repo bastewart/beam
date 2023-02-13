@@ -390,7 +390,7 @@ class BeamModulePlugin implements Plugin<Project> {
 
     // Automatically use the official release version if we are performing a release
     // otherwise append '-SNAPSHOT'
-    project.version = '2.46.0'
+    project.version = '2.46.0-PERMUTIVE-091213'
     if (!isRelease(project)) {
       project.version += '-SNAPSHOT'
     }
@@ -505,6 +505,7 @@ class BeamModulePlugin implements Plugin<Project> {
     def jmh_version = "1.34"
 
     // Export Spark versions, so they are defined in a single place only
+    project.ext.spark2_version = spark2_version
     project.ext.spark3_version = spark3_version
 
     // A map of maps containing common libraries used per language. To use:
@@ -729,6 +730,8 @@ class BeamModulePlugin implements Plugin<Project> {
         slf4j_jcl                                   : "org.slf4j:slf4j-jcl:$slf4j_version",
         snappy_java                                 : "org.xerial.snappy:snappy-java:1.1.8.4",
         spark_core                                  : "org.apache.spark:spark-core_2.11:$spark2_version",
+        spark_network_common                        : "org.apache.spark:spark-network-common_2.11:$spark2_version",
+        spark_sql                                   : "org.apache.spark:spark-sql_2.11:$spark2_version",
         spark_streaming                             : "org.apache.spark:spark-streaming_2.11:$spark2_version",
         spark3_core                                 : "org.apache.spark:spark-core_2.12:$spark3_version",
         spark3_network_common                       : "org.apache.spark:spark-network-common_2.12:$spark3_version",
@@ -1550,7 +1553,7 @@ class BeamModulePlugin implements Plugin<Project> {
             if (project.file("/opt/cprof/profiler_java_agent.so").exists()) {
               def gcpProject = project.findProperty('gcpProject') ?: 'apache-beam-testing'
               def userName = System.getProperty("user.name").toLowerCase().replaceAll(" ", "_")
-              jvmArgs '-agentpath:/opt/cprof/profiler_java_agent.so=-cprof_service=' + userName + "_" + project.getProperty("benchmark").toLowerCase() + '_' + String.format('%1$tY%1$tm%1$td_%1$tH%1$tM%1$tS_%1$tL', System.currentTimeMillis()) + ',-cprof_project_id=' + gcpProject + ',-cprof_zone_name=us-central1-a'
+              jvmArgs '-agentpath:/opt/cprof/profiler_java_agent.so=-cprof_service=' + userName + "_" + project.getProperty("benchmark").toLowerCase() + '_' + System.currentTimeMillis() + ',-cprof_project_id=' + gcpProject + ',-cprof_zone_name=us-central1-a'
             }
           } else {
             // We filter for only Apache Beam benchmarks to ensure that we aren't
